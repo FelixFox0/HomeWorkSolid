@@ -17,3 +17,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::get('/homeWorkSolid', [App\Http\Controllers\HomeWorkSolidController::class, 'index'])
+    ->middleware(App\Http\Middleware\ValidateSearch::class);

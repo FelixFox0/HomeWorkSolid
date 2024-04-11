@@ -22,7 +22,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(GeoCoderInterface::class, GeoCoder::class);
         $this->app->bind(GeoCoderClientInterface::class, function (Application $app) {
-            return new GeoCoderClient($app->make(GeoCoderInterface::class, ['url' => 'https://nominatim.openstreetmap.org/search.php?format=jsonv2&q=']));
+            return new GeoCoderClient($app->make(GeoCoderInterface::class, [
+                'url' => config('geoCoder.url'),
+            ]));
         });
 
         $this->app->bind(HelperDistanceInterface::class, HelperDistanceCoordinates::class);
@@ -42,5 +44,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->app->bind(ClientInterface::class, GuzzleClient::class);
+//        $this->app->bind(ClientInterface::class, \App\Services\CurlHttpClient\CurlHttpClientGuzzleAdaptor::class);
+
     }
 }

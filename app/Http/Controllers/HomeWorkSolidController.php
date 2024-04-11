@@ -2,64 +2,67 @@
 
 namespace App\Http\Controllers;
 
-//use App\Services\GeoCoder\GeoCoderClient\GeoCoderClient;
+use App\Services\GeoCoder\GeoCoderClient\GeoCoderClient;
 use App\Services\GeoCoder\GeoCoderClient\GeoCoderClientInterface;
 //use App\Services\GeoCoder\Helpers\Distance\HelperDistanceCoordinates;
+use App\Services\GeoCoder\Helpers\Distance\HelperDistanceCoordinates;
 use App\Services\GeoCoder\Helpers\Distance\HelperDistanceInterface;
+use App\Services\GeoCoder\Helpers\Distance\HelperDistanceRoad;
 use Illuminate\Http\Request;
 use Illuminate\Routing\ResponseFactory;
 use Illuminate\Support\Facades\Response;
-
-//use GuzzleHttp\Client as GuzzleClient;
-//use GuzzleHttp\ClientInterface;
-//use App\Services\GeoCoder\GeoCoder\GeoCoder;
-//use App\Services\GeoCoder\GeoCoder\GeoCoderInterface;
-
+use Illuminate\Validation\Validator;
+use App\Services\GeoCoder\GeoCoderClient\Exceptions\GeoCoderClientException;
+use Illuminate\Http\JsonResponse;
+use App\Repositories\MongoStartupLogBuilderRepository;
+use App\Repositories\MongoStartupLogOrmRepository;
 class HomeWorkSolidController extends Controller
 {
+    /**
+     * @param Request $request
+     * @param GeoCoderClientInterface $geoCoderClient
+     * @param HelperDistanceInterface $helperDistance
+     * @param ResponseFactory $response
+     * @param Validator $validator
+     * @return JsonResponse
+     */
     public function index(
         Request $request,
-        GeoCoderClientInterface
-        $geoCoderClient,
+        GeoCoderClientInterface $geoCoderClient,
         HelperDistanceInterface $helperDistance,
         ResponseFactory $response
-    )
+    ): JsonResponse
     {
-//        $url = 'https://nominatim.openstreetmap.org/search.php?format=jsonv2&q=';
-        $search = 'Продукти Одеса';
+//        $mongoRepository = new MongoStartupLogBuilderRepository();
+//        $mongoRepository->getData();
 
-        // init coordinates
-//        $lat = 46.4774700;
-//        $lon = 30.7326200;
+//        (new \App\Repositories\LogErrorRepository\LogErrorOrmRepository())->writeError('111','222');
+//        $mongoRepository = new MongoStartupLogOrmRepository();
+//        $mongoRepository->getData();
+
+        $search = $request->input('search');
+        $quantity = $request->input('quantity') ?? 1;
+        $calculator = $request->input('calculator');
+//        var_dump($request);
+//        die();
+
 
         // necessary properties
-        $properties = ['place_id', 'name', 'display_name', 'distance'];
+        $properties = config('geoCoder.properties');
 
-        // start parse api
-//        $guzzleClient = new GuzzleClient();
-//        $geoCoder = new GeoCoder($guzzleClient, $url);
-//        $helperDistance = new HelperDistanceCoordinates($lat, $lon);
-//        $geoCoderClient = new GeoCoderClient($geoCoder);
-//        dd($helperDistance);
+        try {
+            $places = $geoCoderClient->multiSearchWithDistanceSortFilterProperties(
+                $search,
+                $quantity,
+                $helperDistance,
+                'distance',
+                $properties
+            );
+        } catch (GeoCoderClientException $e) {
+            abort(404);
+        }
 
-        $geoCoderClient
-            ->newSearch($search)
-            ->addDistance($helperDistance)
-            ->sortByField('distance');
-        $places = $geoCoderClient->getPlacesFilterProperties($properties);
-//        dump($places);
-
-        $geoCoderClient
-            ->againSearch()
-            ->addDistance($helperDistance)
-            ->sortByField('distance');
-        $places = $geoCoderClient->getPlacesFilterProperties($properties);
-//        dump($places);
-
-        return $response->json(['azaza' => 'olol54o']);
-//        return Response::json(['azaza' => 'ololo']);
-
-//        die();
+        return $response->json($places);
 
     }
 }

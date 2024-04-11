@@ -3,6 +3,7 @@
 namespace App\Services\GeoCoder\GeoCoder;
 
 use GuzzleHttp\ClientInterface;
+use App\Services\GeoCoder\GeoCoder\Exceptions\GeoCoderException;
 
 class GeoCoder implements GeoCoderInterface
 {
@@ -29,15 +30,26 @@ class GeoCoder implements GeoCoderInterface
         return $this->excludePlaceIds ;
     }
 
+    /**
+     * @param string $searchStr
+     * @return array
+     * @throws GeoCoderException
+     */
     public function getPlaces(string $searchStr): array
     {
-        $response = $this->httpClient->request(
-            static::METHOD,
-            $this->url . $searchStr . '&exclude_place_ids=' . urlencode(implode(',', $this->excludePlaceIds))
-        );
-        $places = json_decode($response->getBody()->getContents());
+        try {
+            $response = $this->httpClient->request(
+                static::METHOD,
+                $this->url . $searchStr . '&exclude_place_ids=' . urlencode(implode(',', $this->excludePlaceIds))
+            );
+            $places = json_decode($response->getBody()->getContents());
 
-        return $places;
+
+        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+            throw new GeoCoderException('ClientInterface: ' . $e->getMessage());
+
+        }
+        return $places ?? [];
     }
 
 

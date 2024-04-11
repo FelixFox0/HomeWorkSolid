@@ -4,7 +4,11 @@ namespace App\Services\GeoCoder\GeoCoderClient;
 
 use App\Services\GeoCoder\GeoCoder\GeoCoderInterface as GeoCoder;
 use App\Services\GeoCoder\Helpers\Distance\HelperDistanceInterface as HelperDistance;
+use GuzzleHttp\Client;
 use StdClass;
+use App\Services\GeoCoder\GeoCoder\Exceptions\GeoCoderException;
+use Exception;
+use App\Services\GeoCoder\GeoCoderClient\Exceptions\GeoCoderClientException;
 
 class GeoCoderClient implements GeoCoderClientInterface
 {
@@ -31,7 +35,7 @@ class GeoCoderClient implements GeoCoderClientInterface
         $this->search = $search;
         $this->placesPrevious = [];
         $this->geoCoder->setExcludePlaceIds();
-        $this->places = $this->geoCoder->getPlaces($this->search);
+        $this->places = $this->forceGetPlacesByGeoCoder();
         $this->idToKey();
 
         return $this;
@@ -51,10 +55,37 @@ class GeoCoderClient implements GeoCoderClientInterface
                 array_keys($this->places)
             )
         );
-        $this->places = $this->geoCoder->getPlaces($this->search);
+        $this->places = $this->forceGetPlacesByGeoCoder();
         $this->idToKey();
         $this->places = $this->placesPrevious + $this->places;
         return $this;
+    }
+
+    /**
+     * @return array
+     * @throws GeoCoderClientException
+     */
+    protected function getPlacesByGeoCoder()
+    {
+        try {
+            return $this->geoCoder->getPlaces($this->search);
+        } catch (GeoCoderException $e) {
+            throw new GeoCoderClientException($e->getMessage());
+        }
+    }
+
+    protected function forceGetPlacesByGeoCoder()
+    {
+        for ($i = 1; $i <= 5; $i++) {
+            try {
+                return $this->getPlacesByGeoCoder();
+            } catch (GeoCoderClientException $e) {
+//                dump($i);
+                sleep(1);
+            }
+
+        }
+        throw $e;
     }
 
     public function addDistance(HelperDistance $helperDistance, $forceRecalculate = false)
@@ -94,11 +125,70 @@ class GeoCoderClient implements GeoCoderClientInterface
     protected function idToKey(): void
     {
 
-//        array_combine(array_keys($this->places), array_values($this->places)
         foreach ($this->places as $key=>$place){
             $this->places[$place->place_id] = $place;
             unset($this->places[$key]);
         }
+    }
+
+    public function multiSearchWithDistanceSortFilterProperties(
+        string $search,
+        int $countSearch = 1,
+        HelperDistance $helperDistance = null,
+        string $field = '',
+        array $properties = [],
+        bool $asc = true
+    )
+    {
+        $this->multiSearch($search, $countSearch);
+
+        if (!is_null($helperDistance)){
+            $this->addDistance($helperDistance);
+        }
+        if ($field) {
+            $this->sortByField($field, $asc);
+        }
+        if ($properties) {
+
+            return $this->getPlacesFilterProperties($properties);
+        }
+
+        return $this->getPlaces();
+    }
+
+    protected function multiSearch(string $search, int $countSearch = 1)
+    {
+        $this->newSearch($search);
+
+        for ($i = 1; $i < $countSearch; $i++) {
+            $this->againSearch(true);
+        }
+
+        return $this;
+    }
+
+    public static function easyMultiSearchWithDistanceSortFilterProperties(
+        string $search,
+        int $countSearch = 1,
+        HelperDistance $helperDistance = null,
+        string $field = '',
+        array $properties = [],
+        bool $asc = true
+    )
+    {
+        $class = new static(
+            new \App\Services\GeoCoder\GeoCoder\GeoCoder(
+                new Client(), 'https://nominatim.openstreetmap.org/search.php?format=jsonv2&q='
+            )
+        );
+        return $class->multiSearchWithDistanceSortFilterProperties(
+            $search,
+            $countSearch,
+            $helperDistance,
+            $field ,
+            $properties ,
+            $asc
+        );
     }
 
 }
