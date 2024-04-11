@@ -24,6 +24,7 @@ Route::any('/', function () {
 //    // ...
 //});
 ////
+//
 ////
 ////Route::redirect('/here', '/there', 301);
 ////
