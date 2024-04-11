@@ -9,9 +9,13 @@ class Error extends Model
 {
     use HasFactory;
 
+
+
     protected $collection = 'errors';
+
     protected $connection = 'mongodb';
+
     protected $fillable = ['className', 'textError'];
-    protected $test = 'for test'
+
     public $timestamps = false; // dont us create and update time
 }
