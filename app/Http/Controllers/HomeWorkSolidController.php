@@ -42,7 +42,7 @@ class HomeWorkSolidController extends Controller
 
         $search = $request->input('search');
         $quantity = $request->input('quantity') ?? 1;
-        $calculator = $request->input('calculator');
+        $calculator = $request->input('calculator') ?? '';
 //        var_dump($request);
 //        die();
 
