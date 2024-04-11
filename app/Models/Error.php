@@ -12,5 +12,5 @@ class Error extends Model
     protected $collection = 'errors';
     protected $connection = 'mongodb';
     protected $fillable = ['className', 'textError'];
-//    public $timestamps = false;
+    public $timestamps = false;
 }
