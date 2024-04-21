@@ -24,8 +24,6 @@ Route::any('/', function () {
 //    // ...
 //});
 ////
-//
-////
 ////Route::redirect('/here', '/there', 301);
 ////
 //Route::get('/user/{id}', function (string $id) {
